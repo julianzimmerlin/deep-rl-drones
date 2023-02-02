@@ -1,0 +1,6 @@
+Run everything 3x
+
+1. On hover task: Evaluate Stable Baselines DDPG, (TD3), A2C (50k timesteps) and PID
+2.a Create "fly forward task" and evaluate DDPG, (TD3), A2C (50k timesteps) ) and PID
+2.b Implement DDPG/TD3 for ourselves and evaluate our implementation on Hover and fly forward
+3. Hyperparameter tuning for our implementation
