@@ -1,0 +1,8 @@
+hover-ddpg-kin-one_d_rpm-02.02.2023_17.38.53            DDPG test run
+
+hover-ddpg-kin-one_d_rpm-02.02.2023_19.46.34            DDPG first run 80000 timesteps, rest default
+
+hover-td3-kin-one_d_rpm-02.02.2023_21.43.31             TD3 first run 80000 timesteps, rest default
+
+hover-a2c-kin-one_d_rpm-02.02.2023_23.36.00             A2C first run 80000 timesteps, rest default
+
