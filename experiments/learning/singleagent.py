@@ -100,7 +100,7 @@ if __name__ == "__main__":
         train_env = make_vec_env(HoverAviary,
                                  env_kwargs=sa_env_kwargs,
                                  n_envs=ARGS.cpu,
-                                 seed=0
+                                 #seed=0
                                  )
     if env_name == "flythrugate-aviary-v0":
         train_env = make_vec_env(FlyThruGateAviary,
@@ -224,7 +224,7 @@ if __name__ == "__main__":
                                  deterministic=True,
                                  render=False
                                  )
-    model.learn(total_timesteps=int(1e12),
+    model.learn(total_timesteps=160000,#int(1e12),
                 callback=eval_callback,
                 log_interval=100
                 )
