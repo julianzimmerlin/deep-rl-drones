@@ -45,6 +45,7 @@ sys.path.append('../')
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
+from gym_pybullet_drones.envs.single_agent_rl.ForwardAviary import ForwardAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 
 import shared_constants
@@ -56,10 +57,10 @@ if __name__ == "__main__":
 
     #### Define and parse (optional) arguments for the script ##
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
-    parser.add_argument('--env',        default='hover',      type=str,             choices=['takeoff', 'hover', 'flythrugate'],    help='Help (default: ..)', metavar='')
+    parser.add_argument('--env',        default='hover',      type=str,             choices=['takeoff', 'hover', 'flythrugate', 'forward'],    help='Help (default: ..)', metavar='')
     parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg'],   help='Help (default: ..)', metavar='')
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
-    parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,                                                      help='Help (default: ..)', metavar='')
+    parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
     parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')        
     ARGS = parser.parse_args()
 
@@ -107,6 +108,12 @@ if __name__ == "__main__":
                                  env_kwargs=sa_env_kwargs,
                                  n_envs=ARGS.cpu,
                                  seed=0
+                                 )
+    if env_name == "forward-aviary-v0":
+        train_env = make_vec_env(ForwardAviary,
+                                 env_kwargs=sa_env_kwargs,
+                                 n_envs=ARGS.cpu,
+                                 #seed=0
                                  )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
@@ -207,7 +214,9 @@ if __name__ == "__main__":
                                     env_kwargs=sa_env_kwargs,
                                     n_envs=1,
                                     seed=0
-                                    ) 
+                                    )
+        if env_name == "forward-aviary-v0":
+            raise NotImplementedError()  # we dont use RGB input so we dont need this for the forward-aviary
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################

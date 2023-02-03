@@ -6,7 +6,11 @@ files/logs/*.npy
 files/videos/*.mp4
 
 # Learning results
-experiments/learning/results/save-*
+# experiments/learning/results/save-*
+experiments/learning/results/save-hover-a2c-kin-one_d_rpm-02.02.2023_10.35.54
+experiments/learning/results/save-hover-ddpg-kin-one_d_rpm-02.02.2023_10.58.57
+experiments/learning/results/save-hover-sac-kin-one_d_rpm-02.02.2023_10.24.14
+experiments/learning/results/save-hover-td3-kin-one_d_rpm-02.02.2023_12.10.08
 
 # macOS users
 .DS_Store
