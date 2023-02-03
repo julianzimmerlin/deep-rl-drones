@@ -53,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('--obstacles',          default=False,       type=str2bool,      help='Whether to add obstacles to the environment (default: True)', metavar='')
     parser.add_argument('--simulation_freq_hz', default=240,        type=int,           help='Simulation frequency in Hz (default: 240)', metavar='')
     parser.add_argument('--control_freq_hz',    default=48,         type=int,           help='Control frequency in Hz (default: 48)', metavar='')
-    parser.add_argument('--duration_sec',       default=15,          type=int,           help='Duration of the simulation in seconds (default: 5)', metavar='')
+    parser.add_argument('--duration_sec',       default=5,          type=int,           help='Duration of the simulation in seconds (default: 5)', metavar='')
     parser.add_argument('--trajectory',         default='hover',    type=str,           help='Specifies the trajectory for the PID controlled experiment (default: hover) (options: hover, forward, takeoff, loop)', metavar='')
     ARGS = parser.parse_args()
 
@@ -103,19 +103,21 @@ if __name__ == "__main__":
     PYB_CLIENT = env.getPyBulletClient()
 
     #### Initialize a circular trajectory ######################
-    PERIOD = 10
-    NUM_WP = ARGS.control_freq_hz*PERIOD
-    TARGET_POS = np.zeros((NUM_WP,3))
 
-    if traj == 'hover':
-        for i in range(NUM_WP):    
-            TARGET_POS[i, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1/(NUM_WP-i+1)
-            #TODO: Maybe set this so half of the waypoints are 0,0,1
-    if traj == 'forward':
-        for i in range(NUM_WP):    
-            TARGET_POS[i, :] = INIT_XYZS[0, 0] + 1/(NUM_WP-i+1), INIT_XYZS[0, 1], INIT_XYZS[0, 2]
-    
-    wp_counters = np.array([int((i*NUM_WP/6)%NUM_WP) for i in range(ARGS.num_drones)])
+    if traj == 'hover':  
+        NUM_WP = 1
+        TARGET_POS = np.zeros((NUM_WP,3))  
+        TARGET_POS[:] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1
+        wp_counter = 0
+
+    if traj == 'forward': 
+        PERIOD = 1
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        TARGET_POS[0, :] = INIT_XYZS[0, :]
+        for i in range(NUM_WP-1):
+            TARGET_POS[i+1, :] = TARGET_POS[i, 0] + 1/NUM_WP, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        wp_counter = 0
 
     #### Initialize the logger #################################
     logger = Logger(logging_freq_hz=int(ARGS.simulation_freq_hz/AGGR_PHY_STEPS),
@@ -142,34 +144,30 @@ if __name__ == "__main__":
         if i%CTRL_EVERY_N_STEPS == 0:
 
             #### Compute control for the current way point #############
-            for j in range(ARGS.num_drones):
-                action[str(j)], _, _ = ctrl[j].computeControlFromState(control_timestep=CTRL_EVERY_N_STEPS*env.TIMESTEP,
-                                                                       state=obs[str(j)]["state"],
-                                                                       target_pos=np.hstack([TARGET_POS[wp_counters[j], 0:2], H+j*H_STEP])
-                                                                       )
+            action[str(0)], _, _ = ctrl[0].computeControlFromState(control_timestep=CTRL_EVERY_N_STEPS*env.TIMESTEP,
+                                                                       state=obs[str(0)]["state"],
+                                                                       target_pos=TARGET_POS[wp_counter, :].reshape((3,)))
 
             #### Go to the next way point and loop #####################
-            for j in range(ARGS.num_drones): 
-                wp_counters[j] = wp_counters[j] + 1 if wp_counters[j] < (NUM_WP-1) else 0
+            wp_counter = wp_counter + 1 if wp_counter < (NUM_WP-1) else (NUM_WP-1)
+            # Why are there wp counters? -> to know which drone is at which waypoint
 
         #### Log the simulation ####################################
-        for j in range(ARGS.num_drones):
-            logger.log(drone=j,
-                       timestamp=i/env.SIM_FREQ,
-                       state= obs[str(j)]["state"],
-                       control=np.hstack([TARGET_POS[wp_counters[j], 0:2], H+j*H_STEP, np.zeros(9)])
-                       )
+        logger.log(drone=0,
+                    timestamp=i/env.SIM_FREQ,
+                    state= obs[str(0)]["state"],
+                    control=np.hstack([TARGET_POS[wp_counter, :].reshape((3,)), np.zeros(9)])
+                    )
 
         #### Printout ##############################################
         if i%env.SIM_FREQ == 0:
             env.render()
             #### Print matrices with the images captured by each drone #
             if ARGS.vision:
-                for j in range(ARGS.num_drones):
-                    print(obs[str(j)]["rgb"].shape, np.average(obs[str(j)]["rgb"]),
-                          obs[str(j)]["dep"].shape, np.average(obs[str(j)]["dep"]),
-                          obs[str(j)]["seg"].shape, np.average(obs[str(j)]["seg"])
-                          )
+                print(obs[str(0)]["rgb"].shape, np.average(obs[str(0)]["rgb"]),
+                        obs[str(0)]["dep"].shape, np.average(obs[str(0)]["dep"]),
+                        obs[str(0)]["seg"].shape, np.average(obs[str(0)]["seg"])
+                        )
 
         #### Sync the simulation ###################################
         if ARGS.gui:

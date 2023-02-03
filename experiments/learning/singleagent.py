@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
     parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')
-    parser.add_argument('--use_advance_loss', action='store_true')
+    parser.add_argument('--use_advanced_loss', action='store_true')
     ARGS = parser.parse_args()
 
     #### Save directory ########################################
