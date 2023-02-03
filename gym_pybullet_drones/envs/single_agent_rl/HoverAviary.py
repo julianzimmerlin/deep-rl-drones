@@ -19,7 +19,8 @@ class HoverAviary(BaseSingleAgentAviary):
                  gui=False,
                  record=False, 
                  obs: ObservationType=ObservationType.KIN,
-                 act: ActionType=ActionType.RPM
+                 act: ActionType=ActionType.RPM,
+                 use_advanced_loss=False
                  ):
         """Initialization of a single agent RL environment.
 
@@ -60,6 +61,8 @@ class HoverAviary(BaseSingleAgentAviary):
                          obs=obs,
                          act=act
                          )
+        print('[HoverAviary]: Using advanced loss: '+str(use_advanced_loss))
+        self.use_advanced_loss = use_advanced_loss
 
     ################################################################################
     
@@ -73,7 +76,10 @@ class HoverAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+        if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
+            return -1*np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2 - 1*np.linalg.norm(state[7:10]) - 1*np.linalg.norm(state[13:16])
+        else:
+            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
 
     ################################################################################
     

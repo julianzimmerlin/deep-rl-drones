@@ -61,7 +61,8 @@ if __name__ == "__main__":
     parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg'],   help='Help (default: ..)', metavar='')
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
-    parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')        
+    parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')
+    parser.add_argument('--use_advance_loss', action='store_true')
     ARGS = parser.parse_args()
 
     #### Save directory ########################################
@@ -98,6 +99,7 @@ if __name__ == "__main__":
                                  seed=0
                                  )
     if env_name == "hover-aviary-v0":
+        sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, use_advanced_loss=ARGS.use_advanced_loss)
         train_env = make_vec_env(HoverAviary,
                                  env_kwargs=sa_env_kwargs,
                                  n_envs=ARGS.cpu,
