@@ -11,7 +11,7 @@ class ForwardAviary(BaseSingleAgentAviary):
     
     def __init__(self,
                  drone_model: DroneModel=DroneModel.CF2X,
-                 initial_xyzs=[0,0,0.5],
+                 initial_xyzs=np.array([[0,0,0.2]]),
                  initial_rpys=None,
                  physics: Physics=Physics.PYB,
                  freq: int=240,
@@ -73,7 +73,7 @@ class ForwardAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        return -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
+        return -1 * np.linalg.norm(np.array([1, 0, 0.2])-state[0:3])**2
 
     ################################################################################
     

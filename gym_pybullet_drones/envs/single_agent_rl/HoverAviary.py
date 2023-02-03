@@ -77,7 +77,10 @@ class HoverAviary(BaseSingleAgentAviary):
         """
         state = self._getDroneStateVector(0)
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
-            return -1*np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2 - 1*np.linalg.norm(state[7:10]) - 1*np.linalg.norm(state[13:16])
+            position_loss = np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+            angle_loss = np.linalg.norm(state[7:10])
+            angular_v_loss = np.linalg.norm(state[13:16])
+            return -1*position_loss - 0.2*angle_loss - 0.2*angular_v_loss
         else:
             return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
 
