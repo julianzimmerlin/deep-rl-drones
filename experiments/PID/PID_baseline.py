@@ -1,6 +1,6 @@
-"""Script demonstrating the joint use of simulation and control.
+"""Script for the joint use of simulation and control.
 
-The simulation is run by a `CtrlAviary` or `VisionAviary` environment.
+The simulation is run by a `CtrlAviary` environment.
 The control is given by the PID implementation in `DSLPIDControl`.
 
 Example
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     #### Define and parse (optional) arguments for the script ##
     parser = argparse.ArgumentParser(description='Helix flight script using CtrlAviary or VisionAviary and DSLPIDControl')
     parser.add_argument('--drone',              default="cf2x",     type=DroneModel,    help='Drone model (default: CF2X)', metavar='', choices=DroneModel)
-    parser.add_argument('--num_drones',         default=3,          type=int,           help='Number of drones (default: 3)', metavar='')
+    parser.add_argument('--num_drones',         default=1,          type=int,           help='Number of drones (default: 3)', metavar='')
     parser.add_argument('--physics',            default="pyb",      type=Physics,       help='Physics updates (default: PYB)', metavar='', choices=Physics)
     parser.add_argument('--vision',             default=False,      type=str2bool,      help='Whether to use VisionAviary (default: False)', metavar='')
     parser.add_argument('--gui',                default=True,       type=str2bool,      help='Whether to use PyBullet GUI (default: True)', metavar='')
@@ -50,17 +50,26 @@ if __name__ == "__main__":
     parser.add_argument('--plot',               default=True,       type=str2bool,      help='Whether to plot the simulation results (default: True)', metavar='')
     parser.add_argument('--user_debug_gui',     default=False,      type=str2bool,      help='Whether to add debug lines and parameters to the GUI (default: False)', metavar='')
     parser.add_argument('--aggregate',          default=False,      type=str2bool,      help='Whether to aggregate physics steps (default: False)', metavar='')
-    parser.add_argument('--obstacles',          default=True,       type=str2bool,      help='Whether to add obstacles to the environment (default: True)', metavar='')
+    parser.add_argument('--obstacles',          default=False,       type=str2bool,      help='Whether to add obstacles to the environment (default: True)', metavar='')
     parser.add_argument('--simulation_freq_hz', default=240,        type=int,           help='Simulation frequency in Hz (default: 240)', metavar='')
     parser.add_argument('--control_freq_hz',    default=48,         type=int,           help='Control frequency in Hz (default: 48)', metavar='')
-    parser.add_argument('--duration_sec',       default=5,          type=int,           help='Duration of the simulation in seconds (default: 5)', metavar='')
+    parser.add_argument('--duration_sec',       default=15,          type=int,           help='Duration of the simulation in seconds (default: 5)', metavar='')
+    parser.add_argument('--trajectory',         default='hover',    type=str,           help='Specifies the trajectory for the PID controlled experiment (default: hover) (options: hover, forward, takeoff, loop)', metavar='')
     ARGS = parser.parse_args()
 
     #### Initialize the simulation #############################
     H = .1
     H_STEP = .05
     R = .3
-    INIT_XYZS = np.array([[R*np.cos((i/6)*2*np.pi+np.pi/2), R*np.sin((i/6)*2*np.pi+np.pi/2)-R, H+i*H_STEP] for i in range(ARGS.num_drones)])
+    
+    traj = ARGS.trajectory
+    if traj == None:    
+        INIT_XYZS = np.array([[0, 0, 0]])
+    if traj == 'hover':
+        INIT_XYZS = np.array([[0, 0, 0]])
+    if traj == 'forward':
+        INIT_XYZS = np.array([[0, 0, 0.2]])
+
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 
     #### Create the environment with or without video capture ##
@@ -97,8 +106,15 @@ if __name__ == "__main__":
     PERIOD = 10
     NUM_WP = ARGS.control_freq_hz*PERIOD
     TARGET_POS = np.zeros((NUM_WP,3))
-    for i in range(NUM_WP):
-        TARGET_POS[i, :] = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0], R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+
+    if traj == 'hover':
+        for i in range(NUM_WP):    
+            TARGET_POS[i, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1/(NUM_WP-i+1)
+            #TODO: Maybe set this so half of the waypoints are 0,0,1
+    if traj == 'forward':
+        for i in range(NUM_WP):    
+            TARGET_POS[i, :] = INIT_XYZS[0, 0] + 1/(NUM_WP-i+1), INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+    
     wp_counters = np.array([int((i*NUM_WP/6)%NUM_WP) for i in range(ARGS.num_drones)])
 
     #### Initialize the logger #################################

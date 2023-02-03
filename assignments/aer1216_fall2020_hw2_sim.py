@@ -15,8 +15,8 @@ import numpy as np
 import pybullet as p
 
 #### Uncomment the following 2 lines if "module gym_pybullet_drones cannot be found"
-# import sys
-# sys.path.append('../')
+import sys
+sys.path.append('../')
 
 from gym_pybullet_drones.envs.CtrlAviary import CtrlAviary
 from gym_pybullet_drones.utils.Logger import Logger
