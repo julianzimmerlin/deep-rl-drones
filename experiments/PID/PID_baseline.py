@@ -68,7 +68,7 @@ if __name__ == "__main__":
     if traj == 'hover':
         INIT_XYZS = np.array([[0, 0, 0]])
     if traj == 'forward':
-        INIT_XYZS = np.array([[0, 0, 0.2]])
+        INIT_XYZS = np.array([[0, 0, 0.5]])
 
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 
@@ -105,12 +105,29 @@ if __name__ == "__main__":
     #### Initialize a circular trajectory ######################
 
     if traj == 'hover':  
-        NUM_WP = 1
-        TARGET_POS = np.zeros((NUM_WP,3))  
-        TARGET_POS[:] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1
+        ## Without waypoints:
+        # NUM_WP = 1
+        # TARGET_POS = np.zeros((NUM_WP,3))  
+        # TARGET_POS[:] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1
+        # wp_counter = 0
+        
+        # With waypoints:
+        PERIOD = 1
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        TARGET_POS[0, :] = INIT_XYZS[0, :]
+        for i in range(NUM_WP-1):
+            TARGET_POS[i+1, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], TARGET_POS[i, 2] + 1/NUM_WP
         wp_counter = 0
 
     if traj == 'forward': 
+        ## Without waypoints:
+        # NUM_WP = 1
+        # TARGET_POS = np.zeros((NUM_WP,3))  
+        # TARGET_POS[:] = INIT_XYZS[0, 0] + 1, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        # wp_counter = 0
+        
+        # With waypoints:
         PERIOD = 1
         NUM_WP = ARGS.control_freq_hz*PERIOD
         TARGET_POS = np.zeros((NUM_WP,3))
@@ -179,6 +196,16 @@ if __name__ == "__main__":
     #### Save the simulation results ###########################
     logger.save()
 
+    #### Print the reward of the last state ####################
+    state = obs[str(0)]["state"]
+    if traj == 'hover':
+        reward = -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+        print(f"Reward of final state when using PID control for hovering: {reward}\n")
+    if traj == 'forward':
+        reward = -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
+        print(f"Reward of final state when using PID control for hovering: {reward}\n")
+
     #### Plot the simulation results ###########################
     if ARGS.plot:
         logger.plot()
+

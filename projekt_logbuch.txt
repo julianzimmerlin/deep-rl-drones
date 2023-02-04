@@ -4,3 +4,11 @@ Run everything 3x
 2.a Create "fly forward task" and evaluate DDPG, (TD3), A2C (50k timesteps) ) and PID
 2.b Implement DDPG/TD3 for ourselves and evaluate our implementation on Hover and fly forward
 3. Hyperparameter tuning for our implementation
+
+
+PID:
+PID needs waypoints for the forward flight. 
+Otherwise, the drone falls mid-way and slides to the goal.
+The difference of rewards to a stable solution becomes more apparent 
+when initilizing the drone on a larger height like 1.0 instead of 0.2. 
+Waypoints also make the hover task a bit more precise.
