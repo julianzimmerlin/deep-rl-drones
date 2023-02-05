@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument('--simulation_freq_hz', default=240,        type=int,           help='Simulation frequency in Hz (default: 240)', metavar='')
     parser.add_argument('--control_freq_hz',    default=48,         type=int,           help='Control frequency in Hz (default: 48)', metavar='')
     parser.add_argument('--duration_sec',       default=5,          type=int,           help='Duration of the simulation in seconds (default: 5)', metavar='')
-    parser.add_argument('--trajectory',         default='hover',    type=str,           help='Specifies the trajectory for the PID controlled experiment (default: hover) (options: hover, forward, takeoff, loop)', metavar='')
+    parser.add_argument('--trajectory',         default='hover',    type=str,           help='Specifies the trajectory for the PID controlled experiment (default: hover) (options: hover, forward, turns, circle, ascent)', metavar='')
     ARGS = parser.parse_args()
 
     #### Initialize the simulation #############################
@@ -63,12 +63,18 @@ if __name__ == "__main__":
     R = .3
     
     traj = ARGS.trajectory
-    if traj == None:    
+    if traj == None or traj == 'hover':    
         INIT_XYZS = np.array([[0, 0, 0]])
-    if traj == 'hover':
-        INIT_XYZS = np.array([[0, 0, 0]])
-    if traj == 'forward':
+        INIT_RPY = np.array([[0, 0, 0]])
+    if traj == 'forward' or traj == 'turns':
         INIT_XYZS = np.array([[0, 0, 0.5]])
+        INIT_RPY = np.array([[0, 0, 0]])
+    if traj == 'circle' or traj == 'ascent':
+        INIT_XYZS = np.array([[R*np.cos((0/6)*2*np.pi+np.pi/2), R*np.sin((0/6)*2*np.pi+np.pi/2)-R, H+0*H_STEP]])
+        INIT_RPY = np.array([[0, 0, 0]])
+    if traj == 'ascent_rpy':
+        INIT_XYZS = np.array([[R*np.cos((0/6)*2*np.pi+np.pi/2), R*np.sin((0/6)*2*np.pi+np.pi/2)-R, H+0*H_STEP]])
+        INIT_RPY = np.array([[0, 0, np.pi/2]])
 
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 
@@ -89,6 +95,7 @@ if __name__ == "__main__":
         env = CtrlAviary(drone_model=ARGS.drone,
                          num_drones=ARGS.num_drones,
                          initial_xyzs=INIT_XYZS,
+                         initial_rpys=INIT_RPY,
                          physics=ARGS.physics,
                          neighbourhood_radius=10,
                          freq=ARGS.simulation_freq_hz,
@@ -115,9 +122,8 @@ if __name__ == "__main__":
         PERIOD = 1
         NUM_WP = ARGS.control_freq_hz*PERIOD
         TARGET_POS = np.zeros((NUM_WP,3))
-        TARGET_POS[0, :] = INIT_XYZS[0, :]
-        for i in range(NUM_WP-1):
-            TARGET_POS[i+1, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], TARGET_POS[i, 2] + 1/NUM_WP
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + i/NUM_WP
         wp_counter = 0
 
     if traj == 'forward': 
@@ -131,9 +137,46 @@ if __name__ == "__main__":
         PERIOD = 1
         NUM_WP = ARGS.control_freq_hz*PERIOD
         TARGET_POS = np.zeros((NUM_WP,3))
-        TARGET_POS[0, :] = INIT_XYZS[0, :]
-        for i in range(NUM_WP-1):
-            TARGET_POS[i+1, :] = TARGET_POS[i, 0] + 1/NUM_WP, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = INIT_XYZS[0, 0] + i/NUM_WP, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        wp_counter = 0
+
+    #TODO
+    if traj == 'turns':
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = (i/NUM_WP)*(2*np.pi) + INIT_XYZS[0, 0], np.sin((i/NUM_WP)*(2*np.pi)) + INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        wp_counter = 0
+
+    if traj == 'circle': #Play for 15 sec with --duration_sec 15
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0], R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        wp_counter = 0
+
+    if traj == 'ascent': #Play for 15 sec with --duration_sec 15
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0], R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1], i/NUM_WP + INIT_XYZS[0, 2]
+        wp_counter = 0
+
+    #TODO: Nose flying
+    if traj == 'ascent_rpy': #Play for 15 sec with --duration_sec 15
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+        TARGET_RPY = np.zeros((NUM_WP,3))
+        TARGET_RPY[0, :] = INIT_RPY[0, :]
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0], R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1], i/NUM_WP + INIT_XYZS[0, 2]
+        #     if i < NUM_WP-1:    
+        #         TARGET_RPY[i+1, :] = 0, 0, (TARGET_RPY[i, 2] - 2*np.pi/NUM_WP if i < NUM_WP/2 else -TARGET_RPY[i, 2] + i*2*np.pi/NUM_WP)
         wp_counter = 0
 
     #### Initialize the logger #################################
@@ -162,11 +205,14 @@ if __name__ == "__main__":
 
             #### Compute control for the current way point #############
             action[str(0)], _, _ = ctrl[0].computeControlFromState(control_timestep=CTRL_EVERY_N_STEPS*env.TIMESTEP,
-                                                                       state=obs[str(0)]["state"],
-                                                                       target_pos=TARGET_POS[wp_counter, :].reshape((3,)))
+                                                                    state=obs[str(0)]["state"],
+                                                                    target_pos=TARGET_POS[wp_counter, :].reshape((3,)),
+                                                                    target_rpy=TARGET_RPY[wp_counter, :].reshape((3,)) if traj=='ascent_rpy' else None
+                                                                    )
+
 
             #### Go to the next way point and loop #####################
-            wp_counter = wp_counter + 1 if wp_counter < (NUM_WP-1) else (NUM_WP-1)
+            wp_counter = wp_counter + (1 if wp_counter < (NUM_WP-1) else 0)
             # Why are there wp counters? -> to know which drone is at which waypoint
 
         #### Log the simulation ####################################
@@ -203,7 +249,16 @@ if __name__ == "__main__":
         print(f"Reward of final state when using PID control for hovering: {reward}\n")
     if traj == 'forward':
         reward = -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
-        print(f"Reward of final state when using PID control for hovering: {reward}\n")
+        print(f"Reward of final state when using PID control for forward flying: {reward}\n")
+    if traj == 'turns':
+        reward = -1 * np.linalg.norm(np.array([8*math.pi, 0, 0.5])-state[0:3])**2
+        print(f"Reward of final state when using PID control for tunrs: {reward}\n")
+    if traj == 'circle':
+        reward = -1 * np.linalg.norm(INIT_XYZS-state[0:3])**2
+        print(f"Reward of final state when using PID control for circling: {reward}\n")
+    if traj == 'ascent' or traj == 'ascent_rpy':
+        reward = -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+        print(f"Reward of final state when using PID control for circling ascent: {reward}\n")
 
     #### Plot the simulation results ###########################
     if ARGS.plot:
