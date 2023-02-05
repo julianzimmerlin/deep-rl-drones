@@ -60,7 +60,7 @@ if __name__ == "__main__":
     #### Initialize the simulation #############################
     H = .1
     H_STEP = .05
-    R = .3
+    R = .5
     
     traj = ARGS.trajectory
     if traj == None or traj == 'hover':    
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         INIT_RPY = np.array([[0, 0, 0]])
     if traj == 'ascent_rpy':
         INIT_XYZS = np.array([[R*np.cos((0/6)*2*np.pi+np.pi/2), R*np.sin((0/6)*2*np.pi+np.pi/2)-R, H+0*H_STEP]])
-        INIT_RPY = np.array([[0, 0, np.pi/2]])
+        INIT_RPY = np.array([[0, 0, 0]])
 
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 
@@ -174,9 +174,39 @@ if __name__ == "__main__":
         TARGET_RPY = np.zeros((NUM_WP,3))
         TARGET_RPY[0, :] = INIT_RPY[0, :]
         for i in range(NUM_WP):
-            TARGET_POS[i, :] = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0], R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1], i/NUM_WP + INIT_XYZS[0, 2]
+            xi = R*np.cos((i/NUM_WP)*(2*np.pi)+np.pi/2)+INIT_XYZS[0, 0]
+            yi = R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R+INIT_XYZS[0, 1]
+            TARGET_POS[i, :] = xi, yi, i/NUM_WP + INIT_XYZS[0, 2]
         #     if i < NUM_WP-1:    
         #         TARGET_RPY[i+1, :] = 0, 0, (TARGET_RPY[i, 2] - 2*np.pi/NUM_WP if i < NUM_WP/2 else -TARGET_RPY[i, 2] + i*2*np.pi/NUM_WP)
+            
+            # Handle bottom, right, top, left cases of circle
+            if i == 0:
+                TARGET_RPY[i, :] = 0, 0, 0
+            if i == NUM_WP/4 -1:
+                TARGET_RPY[i, :] = 0, 0, -np.pi/2
+            if i == NUM_WP*2/4 -1:
+                TARGET_RPY[i, :] = 0, 0, -np.pi
+            if i == NUM_WP*3/4 -1:
+                TARGET_RPY[i, :] = 0, 0, -np.pi*3/2
+            if i == NUM_WP -1:
+                TARGET_RPY[i, :] = 0, 0, 0
+            # Standard case
+            # Calculate zero point of tangent of point (x,y) with 1. degree taylor approximation
+            # Taylor approximation: np.sqrt(R**2 - a**2) + R - (R/np.sqrt(R**2 - a**2))*(x-a)
+            # Cut circle in upper (1) and lower (-1) part
+            sn = (1 if i > NUM_WP/4 and i < NUM_WP*3/4 else -1)
+            NST = (R*np.sqrt(R**2 - xi**2)-sn*xi**2+xi*R+sn*R**2)/R
+            h = np.sqrt(yi**2 + (xi-NST)**2)
+            # Top right and bottom left part of circle
+            if (i > NUM_WP/4 -1 and i < NUM_WP*2/4 -1) or (i > NUM_WP*3/4 -1 and i < NUM_WP -1):
+                TARGET_RPY[i, :] = 0, 0, -(np.pi - np.arcsin(yi/h))
+            # Bottom right and top left part of circle
+            if (i > 0 and i < NUM_WP/4 -1) or (i > NUM_WP*2/4 -1 and i < NUM_WP*3/4 -1):
+                TARGET_RPY[i, :] = 0, 0, -np.arcsin(yi/h)
+
+        print(f"MATRIX OF YAW ANGLES FOR CIRCLE FLYING: {TARGET_RPY}")
+
         wp_counter = 0
 
     #### Initialize the logger #################################
@@ -219,7 +249,7 @@ if __name__ == "__main__":
         logger.log(drone=0,
                     timestamp=i/env.SIM_FREQ,
                     state= obs[str(0)]["state"],
-                    control=np.hstack([TARGET_POS[wp_counter, :].reshape((3,)), np.zeros(9)])
+                    control=np.hstack([TARGET_POS[wp_counter, :].reshape((3,)), (TARGET_RPY[wp_counter, :].reshape((3,)) if traj == 'ascent_rpy' else np.zeros(3)), np.zeros(6)])
                     )
 
         #### Printout ##############################################
