@@ -50,7 +50,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import Actio
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = 1e10    # -0  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 if __name__ == "__main__":
@@ -196,7 +196,8 @@ if __name__ == "__main__":
         eval_env = gym.make(env_name,
                             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
                             obs=ARGS.obs,
-                            act=ARGS.act
+                            act=ARGS.act,
+                            use_advanced_loss = ARGS.use_advanced_loss
                             )
     elif ARGS.obs == ObservationType.RGB:
         if env_name == "takeoff-aviary-v0": 
@@ -235,7 +236,7 @@ if __name__ == "__main__":
                                  deterministic=True,
                                  render=False
                                  )
-    model.learn(total_timesteps=80000,#int(1e12),
+    model.learn(total_timesteps=300000,#int(1e12),
                 callback=eval_callback,
                 log_interval=100
                 )

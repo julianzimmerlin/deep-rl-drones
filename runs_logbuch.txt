@@ -12,4 +12,5 @@ save-hover-a2c-kin-rpm-02.03.2023_14.35.12                    A2C act=rpm 80000 
 
 save-hover-td3-kin-rpm-02.03.2023_14.46.09                    TD3 act=rpm 80000 timesteps, rest default
 
+save-hover-ppo-kin-rpm-02.05.2023_22.03.06                  FIRST SUCCESS WITH 4D ACTIONS! PPO act=rpm 300k steps, advanced loss (0.2 angle, 0.2 ang_v)
 
