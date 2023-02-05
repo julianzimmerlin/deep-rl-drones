@@ -113,18 +113,18 @@ if __name__ == "__main__":
 
     if traj == 'hover':  
         ## Without waypoints:
-        # NUM_WP = 1
-        # TARGET_POS = np.zeros((NUM_WP,3))  
-        # TARGET_POS[:] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1
-        # wp_counter = 0
+        NUM_WP = 1
+        TARGET_POS = np.zeros((NUM_WP,3))  
+        TARGET_POS[:] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + 1
+        wp_counter = 0
         
         # With waypoints:
-        PERIOD = 1
-        NUM_WP = ARGS.control_freq_hz*PERIOD
-        TARGET_POS = np.zeros((NUM_WP,3))
-        for i in range(NUM_WP):
-            TARGET_POS[i, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + i/NUM_WP
-        wp_counter = 0
+        # PERIOD = 1
+        # NUM_WP = ARGS.control_freq_hz*PERIOD
+        # TARGET_POS = np.zeros((NUM_WP,3))
+        # for i in range(NUM_WP):
+        #     TARGET_POS[i, :] = INIT_XYZS[0, 0], INIT_XYZS[0, 1], INIT_XYZS[0, 2] + i/NUM_WP
+        # wp_counter = 0
 
     if traj == 'forward': 
         ## Without waypoints:
