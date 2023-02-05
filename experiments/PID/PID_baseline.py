@@ -222,13 +222,14 @@ if __name__ == "__main__":
     CTRL_EVERY_N_STEPS = int(np.floor(env.SIM_FREQ/ARGS.control_freq_hz))
     action = {str(i): np.array([0,0,0,0]) for i in range(ARGS.num_drones)}
     START = time.time()
+    reward = 0
     for i in range(0, int(ARGS.duration_sec*env.SIM_FREQ), AGGR_PHY_STEPS):
 
         #### Make it rain rubber ducks #############################
         # if i/env.SIM_FREQ>5 and i%10==0 and i/env.SIM_FREQ<10: p.loadURDF("duck_vhacd.urdf", [0+random.gauss(0, 0.3),-0.5+random.gauss(0, 0.3),3], p.getQuaternionFromEuler([random.randint(0,360),random.randint(0,360),random.randint(0,360)]), physicsClientId=PYB_CLIENT)
 
         #### Step the simulation ###################################
-        obs, reward, done, info = env.step(action)
+        obs, _, done, info = env.step(action)
 
         #### Compute control at the desired frequency ##############
         if i%CTRL_EVERY_N_STEPS == 0:
@@ -266,29 +267,27 @@ if __name__ == "__main__":
         if ARGS.gui:
             sync(i, START, env.TIMESTEP)
 
+        #### Calculate the reward ##################################
+        state = obs[str(0)]["state"]
+        if traj == 'hover':
+            reward += -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+        if traj == 'forward':
+            reward += -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
+        if traj == 'turns':
+            reward += -1 * np.linalg.norm(np.array([8*math.pi, 0, 0.5])-state[0:3])**2
+        if traj == 'circle':
+            reward += -1 * np.linalg.norm(INIT_XYZS-state[0:3])**2
+        if traj == 'ascent' or traj == 'ascent_rpy':
+            reward += -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+
     #### Close the environment #################################
     env.close()
 
     #### Save the simulation results ###########################
     logger.save()
 
-    #### Print the reward of the last state ####################
-    state = obs[str(0)]["state"]
-    if traj == 'hover':
-        reward = -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
-        print(f"Reward of final state when using PID control for hovering: {reward}\n")
-    if traj == 'forward':
-        reward = -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
-        print(f"Reward of final state when using PID control for forward flying: {reward}\n")
-    if traj == 'turns':
-        reward = -1 * np.linalg.norm(np.array([8*math.pi, 0, 0.5])-state[0:3])**2
-        print(f"Reward of final state when using PID control for tunrs: {reward}\n")
-    if traj == 'circle':
-        reward = -1 * np.linalg.norm(INIT_XYZS-state[0:3])**2
-        print(f"Reward of final state when using PID control for circling: {reward}\n")
-    if traj == 'ascent' or traj == 'ascent_rpy':
-        reward = -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
-        print(f"Reward of final state when using PID control for circling ascent: {reward}\n")
+    #### Print the reward ######################################
+    print(f"Reward of drone when using PID control for {traj}: {reward}\n")
 
     #### Plot the simulation results ###########################
     if ARGS.plot:
