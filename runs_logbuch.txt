@@ -14,3 +14,4 @@ save-hover-td3-kin-rpm-02.03.2023_14.46.09                    TD3 act=rpm 80000 
 
 save-hover-ppo-kin-rpm-02.05.2023_22.03.06                  FIRST SUCCESS WITH 4D ACTIONS! PPO act=rpm 300k steps, advanced loss (0.2 angle, 0.2 ang_v)
 
+save-forward-ppo-kin-rpm-02.06.2023_16.18.29                first try in forward with ppo and 4D rpm using the new loss with angular penalties and clipping
