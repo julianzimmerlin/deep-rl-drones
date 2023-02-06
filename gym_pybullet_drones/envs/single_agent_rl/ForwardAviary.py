@@ -11,7 +11,7 @@ class ForwardAviary(BaseSingleAgentAviary):
     
     def __init__(self,
                  drone_model: DroneModel=DroneModel.CF2X,
-                 initial_xyzs=np.array([[0,0,0.2]]),
+                 initial_xyzs=np.array([[0,0,0.5]]),
                  initial_rpys=None,
                  physics: Physics=Physics.PYB,
                  freq: int=240,
@@ -19,7 +19,8 @@ class ForwardAviary(BaseSingleAgentAviary):
                  gui=False,
                  record=False, 
                  obs: ObservationType=ObservationType.KIN,
-                 act: ActionType=ActionType.RPM
+                 act: ActionType=ActionType.RPM,
+                 use_advanced_loss=False
                  ):
         """Initialization of a single agent RL environment.
 
@@ -60,6 +61,7 @@ class ForwardAviary(BaseSingleAgentAviary):
                          obs=obs,
                          act=act
                          )
+        self.use_advanced_loss = use_advanced_loss
 
     ################################################################################
     
@@ -73,7 +75,10 @@ class ForwardAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        return -1 * np.linalg.norm(np.array([1, 0, 0.2])-state[0:3])**2
+        position_loss = np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])#**2
+        angle_loss = np.linalg.norm(state[7:9])
+        angular_v_loss = np.linalg.norm(state[13:16])
+        return np.maximum(0, 1-position_loss) - 0.2*angle_loss - 0.2*angular_v_loss
 
     ################################################################################
     
