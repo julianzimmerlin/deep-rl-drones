@@ -123,7 +123,7 @@ if __name__ == "__main__":
     
     #### On-policy algorithms ##################################
     onpolicy_kwargs = dict(activation_fn=torch.nn.ReLU,
-                           net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]
+                           net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]  # [dict(vf=[64, 64], pi=[64, 64])]
                            ) # or None
     if ARGS.algo == 'a2c':
         model = A2C(a2cppoMlpPolicy,
@@ -142,7 +142,11 @@ if __name__ == "__main__":
                     train_env,
                     policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename+'/tb/',
-                    verbose=1
+                    verbose=1,
+                    #target_kl=0.03,
+                    #use_sde=True,
+                    #ent_coef=0.001,
+
                     ) if ARGS.obs == ObservationType.KIN else PPO(a2cppoCnnPolicy,
                                                                   train_env,
                                                                   policy_kwargs=onpolicy_kwargs,
@@ -236,7 +240,7 @@ if __name__ == "__main__":
                                  deterministic=True,
                                  render=False
                                  )
-    model.learn(total_timesteps=300000,#int(1e12),
+    model.learn(total_timesteps=1000000,#int(1e12),
                 callback=eval_callback,
                 log_interval=100
                 )
