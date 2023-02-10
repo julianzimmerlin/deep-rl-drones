@@ -47,6 +47,7 @@ from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.ForwardAviary import ForwardAviary
 from gym_pybullet_drones.envs.single_agent_rl.LoopAviary import LoopAviary
+from gym_pybullet_drones.envs.single_agent_rl.FlipsAviary import FlipsAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 
 import shared_constants
