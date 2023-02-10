@@ -19,6 +19,10 @@ register(id='forward-aviary-v0',
          entry_point='gym_pybullet_drones.envs.single_agent_rl:ForwardAviary',
 )
 
+register(id='loop-aviary-v0',
+         entry_point='gym_pybullet_drones.envs.single_agent_rl:LoopAviary',
+)
+
 register(
     id='takeoff-aviary-v0',
     entry_point='gym_pybullet_drones.envs.single_agent_rl:TakeoffAviary',

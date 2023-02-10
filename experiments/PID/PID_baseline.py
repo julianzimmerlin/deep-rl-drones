@@ -60,7 +60,7 @@ if __name__ == "__main__":
     #### Initialize the simulation #############################
     H = .1
     H_STEP = .05
-    R = .5
+    R = .3 # Circle flying radius
     
     traj = ARGS.trajectory
     if traj == None or traj == 'hover':    
@@ -75,7 +75,9 @@ if __name__ == "__main__":
     if traj == 'ascent_rpy':
         INIT_XYZS = np.array([[R*np.cos((0/6)*2*np.pi+np.pi/2), R*np.sin((0/6)*2*np.pi+np.pi/2)-R, H+0*H_STEP]])
         INIT_RPY = np.array([[0, 0, 0]])
-
+    if traj == 'loop' or traj == 'forwardloop':
+        INIT_XYZS = np.array([[0, 0, 1]])
+        INIT_RPY = np.array([[0, 0, 0]])
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 
     #### Create the environment with or without video capture ##
@@ -180,6 +182,7 @@ if __name__ == "__main__":
         #     if i < NUM_WP-1:    
         #         TARGET_RPY[i+1, :] = 0, 0, (TARGET_RPY[i, 2] - 2*np.pi/NUM_WP if i < NUM_WP/2 else -TARGET_RPY[i, 2] + i*2*np.pi/NUM_WP)
             
+            # TODO: Target rpy is somehow not taken into account by the drone
             # Handle bottom, right, top, left cases of circle
             if i == 0:
                 TARGET_RPY[i, :] = 0, 0, 0
@@ -207,6 +210,28 @@ if __name__ == "__main__":
 
         print(f"MATRIX OF YAW ANGLES FOR CIRCLE FLYING: {TARGET_RPY}")
 
+        wp_counter = 0
+
+    if traj == 'loop': #Play for 15 sec with --duration_sec 15
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP,3))
+
+        for i in range(NUM_WP):
+            TARGET_POS[i, :] = (R*np.cos((i/NUM_WP)*(2*np.pi)-np.pi/2)+INIT_XYZS[0, 0]), INIT_XYZS[0, 1], INIT_XYZS[0, 2]-(R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R)
+        wp_counter = 0
+
+    # TODO
+    if traj == 'forwardloop': #Play for 15 sec with --duration_sec 15
+        PERIOD = 10
+        NUM_WP = ARGS.control_freq_hz*PERIOD
+        TARGET_POS = np.zeros((NUM_WP+2,3))
+
+        TARGET_POS[0, :] = INIT_XYZS[0, 0] + 1, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+        TARGET_POS[NUM_WP+2-1, :] = INIT_XYZS[0, 0] + 2, INIT_XYZS[0, 1], INIT_XYZS[0, 2]
+
+        for i in range(NUM_WP):
+            TARGET_POS[i+1, :] = (R*np.cos((i/NUM_WP)*(2*np.pi)-np.pi/2)+TARGET_POS[0, 0]), TARGET_POS[0, 1], TARGET_POS[0, 2]-(R*np.sin((i/NUM_WP)*(2*np.pi)+np.pi/2)-R)
         wp_counter = 0
 
     #### Initialize the logger #################################
@@ -268,17 +293,20 @@ if __name__ == "__main__":
             sync(i, START, env.TIMESTEP)
 
         #### Calculate the reward ##################################
+        # TODO: Reward function seems weird, no penalty if far away from target
         state = obs[str(0)]["state"]
         if traj == 'hover':
-            reward += -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+            reward += -1 * np.maximum(0, 1-np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2)
         if traj == 'forward':
-            reward += -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
+            reward += -1 * np.maximum(0, 1-np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2)
         if traj == 'turns':
-            reward += -1 * np.linalg.norm(np.array([8*math.pi, 0, 0.5])-state[0:3])**2
+            reward += -1 * np.maximum(0, 1-np.linalg.norm(np.array([8*math.pi, 0, 0.5])-state[0:3])**2)
         if traj == 'circle':
-            reward += -1 * np.linalg.norm(INIT_XYZS-state[0:3])**2
+            reward += -1 * np.maximum(0, 1-np.linalg.norm(INIT_XYZS-state[0:3])**2)
         if traj == 'ascent' or traj == 'ascent_rpy':
-            reward += -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+            reward += -1 * np.maximum(0, 1-np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2)
+        if traj == 'loop':
+            reward = 0
 
     #### Close the environment #################################
     env.close()
