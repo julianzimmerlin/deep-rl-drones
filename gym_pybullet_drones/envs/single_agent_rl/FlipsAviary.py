@@ -51,7 +51,7 @@ class FlipsAviary(BaseSingleAgentAviary):
 
         """
         super().__init__(drone_model=drone_model,
-                         initial_xyzs=initial_xyzs,
+                         initial_xyzs=np.array([[0, 0, 1]]),
                          initial_rpys=initial_rpys,
                          physics=physics,
                          freq=freq,
@@ -63,8 +63,8 @@ class FlipsAviary(BaseSingleAgentAviary):
                          )
         print('[FlipsAviary]: Using advanced loss: '+str(use_advanced_loss))
         self.use_advanced_loss = use_advanced_loss
-        self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
-
+        # self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
+        self.initial_xyzs = np.array([[0, 0, 1]])
     ################################################################################
     
     def _computeReward(self):
@@ -83,9 +83,9 @@ class FlipsAviary(BaseSingleAgentAviary):
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
             position_loss = np.linalg.norm(self.initial_xyzs-state[0:3])#**2
             angle_loss = np.linalg.norm(state[7:9])
-            angular_v_loss = np.linalg.norm(state[14]) # reward pitch angular vel
+            angular_v_loss = np.linalg.norm(state[13]) # reward roll angular vel
             vel_loss = np.linalg.norm(state[10:13])
-            return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss + np.minimum(1, angular_v_loss)  # - 0.1*angle_loss  # - 0.2*angular_v_loss
+            return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss + 0.1*np.maximum(0, angular_v_loss)  # - 0.1*angle_loss  # - 0.2*angular_v_loss
         else:
             return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
 

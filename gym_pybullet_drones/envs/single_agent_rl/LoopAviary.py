@@ -51,7 +51,7 @@ class LoopAviary(BaseSingleAgentAviary):
 
         """
         super().__init__(drone_model=drone_model,
-                         initial_xyzs=initial_xyzs,
+                         initial_xyzs=np.array([[0, 0, 1]]),
                          initial_rpys=initial_rpys,
                          physics=physics,
                          freq=freq,
@@ -63,8 +63,8 @@ class LoopAviary(BaseSingleAgentAviary):
                          )
         print('[LoopAviary]: Using advanced loss: '+str(use_advanced_loss))
         self.use_advanced_loss = use_advanced_loss
-        self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
-
+        # self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
+        self.initial_xyzs = np.array([[0, 0, 1]])
     ################################################################################
     
     def _computeReward(self):
