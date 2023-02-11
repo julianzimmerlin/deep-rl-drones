@@ -83,7 +83,7 @@ class FlipsAviary(BaseSingleAgentAviary):
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
             position_loss = np.linalg.norm(self.initial_xyzs-state[0:3])#**2
             angle_loss = np.linalg.norm(state[7:9])
-            angular_v_loss = np.linalg.norm(state[13]) # reward roll angular vel
+            angular_v_loss = state[13] # reward roll angular vel
             vel_loss = np.linalg.norm(state[10:13])
             return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss + 0.1*np.maximum(0, angular_v_loss)  # - 0.1*angle_loss  # - 0.2*angular_v_loss
         else:
