@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     #### Define and parse (optional) arguments for the script ##
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
-    parser.add_argument('--env',        default='hover',      type=str,             choices=['takeoff', 'hover', 'flythrugate', 'forward', 'loop'],    help='Help (default: ..)', metavar='')
+    parser.add_argument('--env',        default='hover',      type=str,             choices=['takeoff', 'hover', 'flythrugate', 'forward', 'loop', 'flips'],    help='Help (default: ..)', metavar='')
     parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg'],   help='Help (default: ..)', metavar='')
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
@@ -122,6 +122,13 @@ if __name__ == "__main__":
     if env_name == "loop-aviary-v0":
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, use_advanced_loss=ARGS.use_advanced_loss)
         train_env = make_vec_env(LoopAviary,
+                                 env_kwargs=sa_env_kwargs,
+                                 n_envs=ARGS.cpu,
+                                 #seed=0
+                                 )  
+    if env_name == "flips-aviary-v0":
+        sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, use_advanced_loss=ARGS.use_advanced_loss)
+        train_env = make_vec_env(FlipsAviary,
                                  env_kwargs=sa_env_kwargs,
                                  n_envs=ARGS.cpu,
                                  #seed=0
