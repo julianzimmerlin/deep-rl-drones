@@ -15,11 +15,11 @@ class ActorCriticNetwork(nn.Module):
         [self.shared_layers.append(nn.Linear(shared_dims[i], shared_dims[i+1])) for i in range(len(shared_dims)-1)]
 
         self.value_layers = nn.ModuleList()
-        self.value_layer.append(nn.Linear(shared_dims[-1], value_dims[0]))
+        self.value_layers.append(nn.Linear(shared_dims[-1], value_dims[0]))
         [self.value_layers.append(nn.Linear(value_dims[i], value_dims[i+1])) for i in range(len(value_dims)-1)]
 
         self.policy_layers = nn.ModuleList()
-        self.policy_layer.append(nn.Linear(policy_dims[-1], policy_dims[0]))
+        self.policy_layers.append(nn.Linear(shared_dims[-1], policy_dims[0]))
         [self.policy_layers.append(nn.Linear(policy_dims[i], policy_dims[i + 1])) for i in range(len(policy_dims) - 1)]
 
 

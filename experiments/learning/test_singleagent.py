@@ -39,6 +39,7 @@ from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
+from our_implementation.ppo import OurPPO
 
 import shared_constants
 
@@ -68,6 +69,8 @@ if __name__ == "__main__":
         model = TD3.load(path)
     if algo == 'ddpg':
         model = DDPG.load(path)
+    if algo == 'ourppo':
+        model = OurPPO.load(path)
 
     #### Parameters to recreate the environment ################
     env_name = ARGS.exp.split("-")[1]+"-aviary-v0"

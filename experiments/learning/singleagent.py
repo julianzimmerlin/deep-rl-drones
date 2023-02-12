@@ -49,6 +49,7 @@ from gym_pybullet_drones.envs.single_agent_rl.ForwardAviary import ForwardAviary
 from gym_pybullet_drones.envs.single_agent_rl.LoopAviary import LoopAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlipsAviary import FlipsAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
+from our_implementation.ppo import OurPPO
 
 import shared_constants
 
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     #### Define and parse (optional) arguments for the script ##
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
     parser.add_argument('--env',        default='hover',      type=str,             choices=['takeoff', 'hover', 'flythrugate', 'forward', 'loop', 'flips'],    help='Help (default: ..)', metavar='')
-    parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg'],   help='Help (default: ..)', metavar='')
+    parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg', 'ourppo'],   help='Help (default: ..)', metavar='')
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
     parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')
@@ -169,6 +170,10 @@ if __name__ == "__main__":
                                                                   tensorboard_log=filename+'/tb/',
                                                                   verbose=1
                                                                   )
+
+    if ARGS.algo == 'ourppo':
+        model = OurPPO(train_env, lr=3e-4, ts_per_batch=640, max_ts_per_episode=1000000, n_updates_per_iter=10, gamma=0.99, expl_std=0.5, tensorboard_log=filename+'/tb/', use_stable_bl_policy=True, clip=0.2, seed=0)
+
 
     #### Off-policy algorithms #################################
     offpolicy_kwargs = dict(activation_fn=torch.nn.ReLU,
