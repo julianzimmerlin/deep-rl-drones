@@ -1,0 +1,18 @@
+TODO: Not complete
+For windows: 
+
+conda install -c conda-forge numpy
+
+conda install -c conda-forge matplotlib
+
+conda install -c conda-forge pybullet
+
+conda install -c conda-forge gym
+
+conda install -c conda-forge Pillow
+
+conda install -c conda-forge Cycler
+
+conda install pytorch torchvision torchaudio cpuonly -c pytorch
+
+conda install -c conda-forge tensorboard
