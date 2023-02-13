@@ -1,6 +1,10 @@
 import numpy as np
 from gym import spaces
 
+# # FOR DEBUGGING:
+# from matplotlib import pyplot as plt
+
+
 from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics, BaseAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType, BaseSingleAgentAviary
 
@@ -20,7 +24,10 @@ class LoopAviary(BaseSingleAgentAviary):
                  record=False, 
                  obs: ObservationType=ObservationType.KIN,
                  act: ActionType=ActionType.RPM,
-                 use_advanced_loss=False
+                 use_advanced_loss=False,
+                 x_circle=[],
+                 y_circle=[],
+                 z_circle=[]
                  ):
         """Initialization of a single agent RL environment.
 
@@ -65,6 +72,11 @@ class LoopAviary(BaseSingleAgentAviary):
         self.use_advanced_loss = use_advanced_loss
         # self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
         self.initial_xyzs = np.array([[0, 0, 1]])
+        
+        # FOR DEBUGGING:
+        # self.x_circle = x_circle
+        # self.y_circle = y_circle
+        # self.z_circle = z_circle
     ################################################################################
     
     def _computeReward(self):
@@ -79,16 +91,77 @@ class LoopAviary(BaseSingleAgentAviary):
         R = 0.3 # Loop radius
         PERIOD = 10
 
+        # Normalization bounds, see _clipAndNormalizeState method
+        MAX_LIN_VEL_XY = 3 
+        MAX_LIN_VEL_Z = 1
+
+        MAX_XY = MAX_LIN_VEL_XY*self.EPISODE_LEN_SEC
+        MAX_Z = MAX_LIN_VEL_Z*self.EPISODE_LEN_SEC
+
+        MAX_PITCH_ROLL = np.pi # Full range
+        MAX_PITCH_ROLL_VEL = 6*np.pi
+        MAX_YAW_VEL = 3*np.pi
+
         state = self._getDroneStateVector(0)
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
-            position_loss = np.linalg.norm(np.array([(R*np.cos((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)-np.pi/2)+self.initial_xyzs[0, 0]), self.initial_xyzs[0, 1], self.initial_xyzs[0, 2]-(R*np.sin((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)+np.pi/2)-R)])-state[0:3])#**2
+            x = R*np.cos((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)-np.pi/2)+self.initial_xyzs[0, 0]
+            y = self.initial_xyzs[0, 1]
+            z = self.initial_xyzs[0, 2]-(R*np.sin((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)+np.pi/2)-R)
+            
+            position_loss = np.linalg.norm(np.array([(x, y, z)])-state[0:3])#**2
             angle_loss = np.linalg.norm(state[7:9])
             angular_v_loss = np.linalg.norm(state[13:16])
             vel_loss = np.linalg.norm(state[10:13])
-            print(f"DEBUGGING INFORMATION for LoopAviary: \nStep Counter: {self.step_counter} \nNumber of WPs: {(self.SIM_FREQ*self.EPISODE_LEN_SEC)} \nX-Value: {(R*np.cos((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)-np.pi/2)+self.initial_xyzs[0, 0])} \nZ-Value: {self.initial_xyzs[0, 2]-(R*np.sin((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)+np.pi/2)-R)}")
-            return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss  # - 0.1*angle_loss  # - 0.2*angular_v_loss
+
+            # DEBUGGING BLOCK:
+            # self.x_circle.append(x)
+            # self.y_circle.append(y)
+            # self.z_circle.append(z)
+
+            # if self.step_counter/self.SIM_FREQ > self.EPISODE_LEN_SEC:
+            #     #C = np.arange(len(self.x_circle))
+            #     #for i in range(C.size):                          not tested
+            #     #     C[i] = np.array([0, 0, 255])
+            #     #C[0], C[C.size-1] = np.array([255, 0, 0])
+            #     fig, ax = plt.subplots()
+            #     #ax = fig.add_subplot(111, projection = '3d')
+            #     ax.scatter(self.x_circle, self.y_circle, self.z_circle, c=C/255.0)
+
+            #     ax.set_xlabel(r'X', fontsize=15)
+            #     ax.set_ylabel(r'Y', fontsize=15)
+            #     ax.set_zlabel(r'Z', fontsize=15)
+            #     ax.set_title('X-Z circular trajectory')
+
+            #     ax.grid(True)
+            #     fig.tight_layout()
+
+            #     plt.show()
+
+            # Clipping to range of (0,1) after normalizing
+            # Normalization to (0, upper_bound) with X_changed = (X-X_min)/(X_max - X_min) * upper_bound
+            # https://inomics.com/blog/standardizing-the-data-of-different-scales-which-method-to-use-1036202
+            # https://stats.stackexchange.com/questions/70801/how-to-normalize-data-to-0-1-range
+            position_loss = (position_loss - (-2*MAX_XY))/(2*MAX_XY - (-2*MAX_XY))
+            angle_loss = (angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            angular_v_loss = (angular_v_loss - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
+            vel_loss = (vel_loss - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
+
+            # 1- means we "penalize", which means we reward undesired actions less and desired ones more
+            position_loss = 1-np.maximum(0, np.minimum(position_loss, 1))
+            angle_loss = 1-np.maximum(0, np.minimum(angle_loss, 1))
+            angular_v_loss = 1-np.maximum(0, np.minimum(angular_v_loss, 1))
+            vel_loss = 1-np.maximum(0, np.minimum(vel_loss, 1))
+
+            if np.random.randint(0, 101) >= 99:
+                print(f"DEBUGGING INFORMATION for LoopAviary: \nStep Counter: {self.step_counter} \nNumber of WPs: {(self.SIM_FREQ*self.EPISODE_LEN_SEC)} \nX_target-Value: {x} \nZ_target-Value: {z} \nX_state-Value: {state[0]} \nZ_state-Value: {state[2]} \nPosition_rew: {position_loss} \nVelocity_rew: {vel_loss} \n")
+            
+            return position_loss + vel_loss #+ (1/4)*angle_loss + (1/4)*angular_v_loss
         else:
-            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+            x = R*np.cos((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)-np.pi/2)+self.initial_xyzs[0, 0]
+            y = self.initial_xyzs[0, 1]
+            z = self.initial_xyzs[0, 2]-(R*np.sin((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)+np.pi/2)-R)
+            
+            return -1 * np.linalg.norm(np.array([x, y, z])-state[0:3])**2
 
     ################################################################################
     

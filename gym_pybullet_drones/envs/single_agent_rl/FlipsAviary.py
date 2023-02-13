@@ -13,6 +13,7 @@ class FlipsAviary(BaseSingleAgentAviary):
                  drone_model: DroneModel=DroneModel.CF2X,
                  initial_xyzs=None,
                  initial_rpys=None,
+                 state_prev=None,
                  physics: Physics=Physics.PYB,
                  freq: int=240,
                  aggregate_phy_steps: int=1,
@@ -65,6 +66,8 @@ class FlipsAviary(BaseSingleAgentAviary):
         self.use_advanced_loss = use_advanced_loss
         # self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
         self.initial_xyzs = np.array([[0, 0, 1]])
+        # Class variables
+        self.state_prev = self._getDroneStateVector(0)
     ################################################################################
     
     def _computeReward(self):
@@ -79,15 +82,78 @@ class FlipsAviary(BaseSingleAgentAviary):
         R = 0.3 # Flips radius
         PERIOD = 10
 
+        # Normalization bounds, see _clipAndNormalizeState method
+        MAX_LIN_VEL_XY = 3 
+        MAX_LIN_VEL_Z = 1
+
+        MAX_XY = MAX_LIN_VEL_XY*self.EPISODE_LEN_SEC
+        MAX_Z = MAX_LIN_VEL_Z*self.EPISODE_LEN_SEC
+
+        MAX_PITCH_ROLL = np.pi # Full range
+        MAX_PITCH_ROLL_VEL = 6*np.pi
+        MAX_YAW_VEL = 3*np.pi
+
         state = self._getDroneStateVector(0)
+        rand = np.random.randint(0, 101)
+        
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
-            position_loss = np.linalg.norm(self.initial_xyzs-state[0:3])#**2
-            angle_loss = np.linalg.norm(state[7:9])
+            position_loss = np.linalg.norm(self.initial_xyzs-state[0:3])**2
+            position_z_loss = np.maximum(0, state[2]-self.initial_xyzs[0,2]) # slightly reward going up a bit
+            angle_loss = np.linalg.norm(state[8:10])
+            roll_angle_loss = state[7]
+            roll_change = state[7]-self.state_prev[7]
             angular_v_loss = state[13] # reward roll angular vel
             vel_loss = np.linalg.norm(state[10:13])
-            return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss + 0.1*np.maximum(0, angular_v_loss)  # - 0.1*angle_loss  # - 0.2*angular_v_loss
+
+            # Clipping to range of (0,1) after normalizing
+            # Normalization to (0, upper_bound) with X_changed = (X-X_min)/(X_max - X_min) * upper_bound
+            # https://inomics.com/blog/standardizing-the-data-of-different-scales-which-method-to-use-1036202
+            # https://stats.stackexchange.com/questions/70801/how-to-normalize-data-to-0-1-range
+            position_loss = (position_loss - (-MAX_XY))/(MAX_XY - (-MAX_XY))
+            position_z_loss = (position_z_loss - 0)/(MAX_Z - 0)
+            angle_loss = (angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            roll_angle_loss = (roll_angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            roll_change = (roll_change - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            angular_v_loss = (angular_v_loss - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
+            vel_loss = (vel_loss - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
+            
+            if rand >= 99:   
+                print (f"DEBUGGING INFORMATION: after normalization \nPosition Loss: {position_loss} \nHeight Loss: {position_z_loss} \nAngle Loss: {angle_loss} \nRoll Loss: {angular_v_loss} \nRoll Angle Loss: {roll_angle_loss} \nRoll Change: {roll_change} \nVel Loss: {vel_loss} \n")
+
+            # 1- means we "penalize", which means we reward undesired actions less
+            position_loss = 1-np.maximum(0, np.minimum(position_loss, 1))
+            position_z_loss = np.maximum(0, np.minimum(position_z_loss, 1))
+            angle_loss = 1-np.maximum(0, np.minimum(angle_loss, 1))
+            roll_angle_loss = np.maximum(0, np.minimum(roll_angle_loss, 1))
+            roll_change = np.maximum(0, np.minimum(roll_change, 1))
+            angular_v_loss = np.maximum(0, np.minimum(angular_v_loss, 1))
+            vel_loss = 1-np.maximum(0, np.minimum(vel_loss, 1))
+
+            if rand >= 99:   
+                print (f"DEBUGGING INFORMATION: after clipping \nPosition Loss: {position_loss} \nHeight Loss: {position_z_loss} \nAngle Loss: {angle_loss} \nRoll Loss: {angular_v_loss} \nRoll Angle Loss: {roll_angle_loss} \nRoll Change: {roll_change} \nVel Loss: {vel_loss} \n")
+
+            # Factors
+            roll_fac = 1
+            z_fac = 0.05
+            vel_fac = 0.1
+            ang_fac = 0.1
+            pos_fac = 0.1
+
+            # Save state as previous state
+            self.state_prev = state
+
+            if rand >= 99:
+                #print (f"DEBUGGING INFORMATION: after weighting \nPosition Loss: {pos_fac*(1/7)*position_loss} \nHeight Loss: {z_fac*(1/7)*position_z_loss} \nAngle Loss: {ang_fac*(1/7)*angle_loss} \nRoll Loss: {roll_fac*(1/7)*angular_v_loss} \nRoll Angle Loss: {roll_fac*(1/7)*roll_angle_loss} \nRoll Change: {roll_fac*(1/7)*roll_change} \nVel Loss: {vel_fac*(1/7)*vel_loss} \n")
+                print (f"DEBUGGING INFORMATION: after weighting \nPosition Loss: {pos_fac*(1/4)*position_loss} \nHeight Loss: {z_fac*(1/4)*position_z_loss} \nAngle Loss: None \nRoll Loss: None \nRoll Angle Loss: None \nRoll Change: {roll_fac*(1/4)*roll_change} \nVel Loss: {vel_fac*(1/4)*vel_loss} \n")
+                print(f"DEBUGGING INFORMATION: \nReward: {pos_fac*(1/4)*position_loss + z_fac*(1/4)*position_z_loss + vel_fac*(1/4)*vel_loss + roll_fac*(1/4)*roll_change} \n")
+            return pos_fac*(1/4)*position_loss + z_fac*(1/4)*position_z_loss + vel_fac*(1/4)*vel_loss + roll_fac*(1/4)*roll_change # (0, 1)
+            #return pos_fac*(1/7)*position_loss + z_fac*(1/7)*position_z_loss + vel_fac*(1/7)*vel_loss + roll_fac*(1/7)*angular_v_loss + ang_fac*(1/7)*angle_loss + roll_fac*(1/7)*roll_angle_loss + roll_fac*(1/7)*roll_change # (0, 1)
         else:
-            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
+            roll_change = state[7]-self.state_prev[7]
+            # Save state as previous state
+            self.state_prev = state
+            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2 + 0.1*roll_change
+        # Loss clipping: clipped_loss = max(0, min(loss, upper_bound))
 
     ################################################################################
     
