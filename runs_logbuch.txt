@@ -21,3 +21,21 @@ save-hover-ppo-kin-rpm-02.06.2023_12.51.11                  --> loss: 1 - positi
 save-hover-ppo-kin-rpm-02.06.2023_13.58.10                  --> loss: 1 - position_loss - 0.1*angle_loss
 
 save-hover-ppo-kin-rpm-02.06.2023_15.10.22                  --> loss: np.maximum(0, 1 - position_loss)
+
+save-flips-ppo-kin-rpm-02.11.2023_17.47.59                  Drone went far from initial state. Try to penalize positional loss more: -0.1*position_loss - 0.5*position_z_loss - 0.1 * vel_loss + 0.1*np.maximum(0, angular_v_loss)
+
+save-flips-ppo-kin-rpm-02.12.2023_13..                      Clipping every loss to range 0, 1 [FOUND MISTAKE: The position_loss was positive!]
+
+save-flips-ppo-kin-rpm-02.12.2023_15.17.14                  Mistake corrected but learning is worse.. Change reward to only positive now and normalize (and clip for safety) every loss to (0,1) range but reward undesired behaviour less by taking 1-normalized_and_clipped_undesired_behaviour_loss
+
+save-flips-ppo-kin-rpm-02.12.2023_16.12.31                  Drone just hovers and doesn´t do flips -> try to upscale angular_v_loss
+
+save-flips-ppo-kin-rpm-02.12.2023_18.30.39                  Drone drifts away by rolling again --> undo changes and reward roll angle now
+
+save-flips-ppo-kin-rpm-02.12.2023_21.04.18                  Drone hovers, then drifts as before --> undo changes, take square of positional loss and scale down
+
+save-flips-ppo-kin-rpm-02.12.2023_23.38.04                  Drone only hovers, but hovers pretty good --> upscale angular_v_loss and roll_angle_loss, but keep other changes (so last three changes all together)
+
+save-flips-ppo-kin-rpm-02.13.2023_01.39.39                  Drone only hovers --> Try to save previous state and reward a change of the roll angle (AND: since the reward is positive now, don´t reward moving down (it was meant as a penalty for negative reward), but slightly reward moving up)
+
+save-flips-ppo-kin-rpm-02.13.2023_11.33.30                  Drone didn´t learn to do anything, just hovers shortyl and then drifts away like usual --> try only doing positional rewards and roll_change reward
