@@ -39,3 +39,5 @@ save-flips-ppo-kin-rpm-02.12.2023_23.38.04                  Drone only hovers, b
 save-flips-ppo-kin-rpm-02.13.2023_01.39.39                  Drone only hovers --> Try to save previous state and reward a change of the roll angle (AND: since the reward is positive now, don´t reward moving down (it was meant as a penalty for negative reward), but slightly reward moving up)
 
 save-flips-ppo-kin-rpm-02.13.2023_11.33.30                  Drone didn´t learn to do anything, just hovers shortyl and then drifts away like usual --> try only doing positional rewards and roll_change reward
+
+save-flips-ppo-kin-rpm-02.13.2023_13.23.22                  flies up and rotates around x axis a bit, while wobbling (yaw and pitch were left out and going up was rewarded a bit too much)
