@@ -61,6 +61,7 @@ class ForwardAviary(BaseSingleAgentAviary):
                          obs=obs,
                          act=act
                          )
+        print('[ForwardAviary]: Using advanced loss: ' + str(use_advanced_loss))
         self.use_advanced_loss = use_advanced_loss
 
     ################################################################################
@@ -75,17 +76,20 @@ class ForwardAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        position_rew = np.minimum(1,np.maximum(0,1/(np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])+1)))  #np.maximum(0, 1-np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2)
-        angle_loss = 0.1 * np.linalg.norm(state[7:9])
-        angular_v_loss = 0.1 * np.linalg.norm(state[13:16])
-        vel_loss = 0.1*np.linalg.norm(state[10:13])
-        action_loss = 0.01*np.linalg.norm(state[16:])
-        #if np.random.rand()< 0.01:
-            #print(f'pos: {position_rew}, angle: {angle_loss}, vel: {vel_loss}, action: {action_loss}')
-            #np.set_printoptions(precision=3)
-            #print(state)
-            #print(state[16:])
-        return position_rew - vel_loss - angle_loss - action_loss#- 0.2*angular_v_loss
+        if self.use_advanced_loss:
+            position_rew = np.maximum(0, 1-np.linalg.norm(np.array([1, 0, 0.5])-state[0:3]))  # np.minimum(1,np.maximum(0,1/(np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])+1)))  #
+            angle_loss = 0.1 * np.linalg.norm(state[7:9])
+            angular_v_loss = 0.1 * np.linalg.norm(state[13:16])
+            vel_loss = 0.1*np.linalg.norm(state[10:13])
+            action_loss = 0.01*np.linalg.norm(state[16:])
+            #if np.random.rand()< 0.01:
+                #print(f'pos: {position_rew}, angle: {angle_loss}, vel: {vel_loss}, action: {action_loss}')
+                #np.set_printoptions(precision=3)
+                #print(state)
+                #print(state[16:])
+            return position_rew# - vel_loss - angle_loss - action_loss#- 0.2*angular_v_loss
+        else:
+            return -1 * np.linalg.norm(np.array([1, 0, 0.5])-state[0:3])**2
 
     ################################################################################
     

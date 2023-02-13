@@ -81,7 +81,7 @@ class HoverAviary(BaseSingleAgentAviary):
             angle_loss = np.linalg.norm(state[7:9])
             angular_v_loss = np.linalg.norm(state[13:16])
             vel_loss = np.linalg.norm(state[10:13])
-            return np.maximum(0, 1 - position_loss) - 0.1 * vel_loss  # - 0.1*angle_loss  # - 0.2*angular_v_loss
+            return np.maximum(0, 1 - position_loss)# - 0.1 * vel_loss  # - 0.1*angle_loss  # - 0.2*angular_v_loss
         else:
             return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2
 

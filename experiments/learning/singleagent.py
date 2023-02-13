@@ -65,11 +65,13 @@ if __name__ == "__main__":
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                 help='Help (default: ..)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,      choices=[ActionType.ONE_D_RPM, ActionType.RPM], help='Help (default: ..)', metavar='')
     parser.add_argument('--cpu',        default='1',          type=int,                                                             help='Help (default: ..)', metavar='')
+    parser.add_argument('--timesteps', default='10', type=int, help='Help (default: ..)', metavar='')
+    parser.add_argument('--save_subdir', default='', type=str, help='Help (default: ..)', metavar='')
     parser.add_argument('--use_advanced_loss', action='store_true')
     ARGS = parser.parse_args()
 
     #### Save directory ########################################
-    filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.algo+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+    filename = os.path.dirname(os.path.abspath(__file__))+'/results/'+ARGS.save_subdir+'/save-'+ARGS.env+'-'+ARGS.algo+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
@@ -115,6 +117,7 @@ if __name__ == "__main__":
                                  seed=0
                                  )
     if env_name == "forward-aviary-v0":
+        sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, use_advanced_loss=ARGS.use_advanced_loss)
         train_env = make_vec_env(ForwardAviary,
                                  env_kwargs=sa_env_kwargs,
                                  n_envs=ARGS.cpu,
@@ -172,7 +175,7 @@ if __name__ == "__main__":
                                                                   )
 
     if ARGS.algo == 'ourppo':
-        model = OurPPO(train_env, lr=3e-4, ts_per_batch=640, max_ts_per_episode=1000000, n_updates_per_iter=10, gamma=0.99, expl_std=0.5, tensorboard_log=filename+'/tb/', use_stable_bl_policy=True, clip=0.2, seed=0)
+        model = OurPPO(a2cppoMlpPolicy, train_env, tensorboard_log=filename + '/tb/', use_stable_bl_policy=True, clip=0.2, seed=0)
 
 
     #### Off-policy algorithms #################################
@@ -261,7 +264,7 @@ if __name__ == "__main__":
                                  deterministic=True,
                                  render=False
                                  )
-    model.learn(total_timesteps=1000000,#int(1e12),
+    model.learn(total_timesteps=ARGS.timesteps,#int(1e12),
                 callback=eval_callback,
                 log_interval=100
                 )

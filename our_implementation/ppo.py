@@ -39,15 +39,17 @@ class OurPPO(BaseAlgorithm):
         )
         self.policy = self.policy.to(self.device)
 
-    def __init__(self, env, lr, ts_per_batch, max_ts_per_episode, n_updates_per_iter, gamma, expl_std, tensorboard_log, use_stable_bl_policy, clip=0.2, seed=0):
+    def __init__(self, policy, env, lr=3e-4, ts_per_batch=1210, max_ts_per_episode=1000000, n_updates_per_iter=5, gamma=0.99,
+                 expl_std=0.5, tensorboard_log=None, use_stable_bl_policy=True, device='cpu',
+                 _init_setup_model=True, clip=0.2, seed=0):
         super(OurPPO, self).__init__(
-            policy=ActorCriticPolicy,
+            policy=policy,
             env=env,
             policy_base=ActorCriticPolicy,
             learning_rate=lr,
             policy_kwargs={},
             verbose=1,
-            device='cpu',
+            device=device,
             create_eval_env=False,
             support_multi_env=False,
             seed=seed,
@@ -57,15 +59,17 @@ class OurPPO(BaseAlgorithm):
             ),
         )
 
-        self._setup_model()
+        if _init_setup_model:
+            self._setup_model()
 
         self.env = env
-        self.obs_dim = env.observation_space.shape[0]
-        self.act_dim = env.action_space.shape[0]
+        if env is not None:
+            self.obs_dim = env.observation_space.shape[0]
+            self.act_dim = env.action_space.shape[0]
 
         self.use_stable_bl_policy = use_stable_bl_policy
         if not use_stable_bl_policy:
-            self.network = ActorCriticNetwork(shared_dims=[self.obs_dim, 512, 512], policy_dims=[256, 128, self.act_dim], value_dims=[256, 128, 1])
+            self.network = ActorCriticNetwork(shared_dims=[self.obs_dim, 512], policy_dims=[256, 128, self.act_dim], value_dims=[256, 128, 1])
             self.optim = Adam(self.network.parameters(), lr=lr)
 
         # Set hyperparameters
@@ -75,22 +79,13 @@ class OurPPO(BaseAlgorithm):
         self.lr = lr
         self.gamma = gamma
         self.clip = clip
+        self.max_grad_norm = 0.5
         self.exploration_std = expl_std
-        self.save_freq = 10  # how often we save the model in iterations
+        # self.save_freq = 10  # how often we save the model in iterations
         self.vf_coef = 0.5  # how the value loss is weighted in relation to the policy loss
         self.seed = seed
         torch.manual_seed(self.seed)
         print(f"PPO Torch seed: {self.seed}")
-
-        # This logger will help us with printing out summaries of each iteration
-        #self.logger = {
-        #    'delta_t': time.time_ns(),
-        #    't_so_far': 0,  # timesteps so far
-        #    'i_so_far': 0,  # iterations so far
-        #    'batch_lens': [],  # episodic lengths in batch
-        #    'batch_rews': [],  # episodic returns in batch
-        #    'actor_losses': [],  # losses of actor network in current iteration
-        #}
 
     def learn_custom(self, timesteps, log_interval, callback):
         total_timesteps, callback = self._setup_learn(
@@ -140,7 +135,7 @@ class OurPPO(BaseAlgorithm):
                     V_phi, log_probs, _ = self.policy.evaluate_actions(batch_obs, batch_acts)
                     V_phi = V_phi.flatten()
 
-                policy_ratios = torch.exp(batch_log_probs - log_probs)
+                policy_ratios = torch.exp(log_probs - batch_log_probs)
 
                 # Calculate PPO objective
                 part1 = policy_ratios * A_k_normalized
@@ -148,8 +143,8 @@ class OurPPO(BaseAlgorithm):
                 pg_loss = (-torch.min(part1, part2)).mean()
                 pg_losses.append(pg_loss.item())
 
-                # Calculate value losss
-                vf_loss = MSELoss()(V_phi, batch_rtgs)
+                # Calculate value loss
+                vf_loss = MSELoss()(V_phi.squeeze(), batch_rtgs.squeeze())
                 value_losses.append(vf_loss.item())
 
                 loss = pg_loss + self.vf_coef * vf_loss
@@ -163,7 +158,7 @@ class OurPPO(BaseAlgorithm):
                     self.policy.optimizer.zero_grad()
                     loss.backward()
                     # Clip grad norm
-                    # torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+                    torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
                     self.policy.optimizer.step()
 
             self._n_updates += self.n_updates_per_iter
@@ -218,7 +213,7 @@ class OurPPO(BaseAlgorithm):
                     break  # the inner loop, so env will be reset
 
             batch_lens.append(ep_t + 1)
-            batch_rews.append(ep_rews)
+            batch_rews.append(np.array(ep_rews))
 
         batch_rtgs = self.compute_rtgs(batch_rews)  # Computed discounted rewards to go
 
@@ -255,7 +250,7 @@ class OurPPO(BaseAlgorithm):
                 discounted_reward = rew + discounted_reward * self.gamma
                 batch_rtgs_ls.append(discounted_reward)
 
-        return torch.tensor(batch_rtgs_ls[::-1], dtype=torch.float32)
+        return torch.tensor(np.array(batch_rtgs_ls[::-1]), dtype=torch.float32)
 
 
     def learn(
