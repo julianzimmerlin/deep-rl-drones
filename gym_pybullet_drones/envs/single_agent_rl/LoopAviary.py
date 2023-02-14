@@ -71,7 +71,7 @@ class LoopAviary(BaseSingleAgentAviary):
         print('[LoopAviary]: Using advanced loss: '+str(use_advanced_loss))
         self.use_advanced_loss = use_advanced_loss
         # self.initial_xyzs = (initial_xyzs if initial_xyzs != None else np.array([[0, 0, 1]]))
-        self.initial_xyzs = np.array([[0, 0, 1]])
+        self.initial_xyzs = np.array([[0, 0, 0.3]])
         
         # FOR DEBUGGING:
         # self.x_circle = x_circle
