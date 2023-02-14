@@ -68,6 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('--timesteps', default='10', type=int, help='Help (default: ..)', metavar='')
     parser.add_argument('--save_subdir', default='', type=str, help='Help (default: ..)', metavar='')
     parser.add_argument('--use_advanced_loss', action='store_true')
+    parser.add_argument('--load', action='store_true')
     ARGS = parser.parse_args()
 
     #### Save directory ########################################
@@ -146,33 +147,53 @@ if __name__ == "__main__":
                            net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]  # [dict(vf=[64, 64], pi=[64, 64])]
                            ) # or None
     if ARGS.algo == 'a2c':
-        model = A2C(a2cppoMlpPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename+'/tb/',
-                    verbose=1
-                    ) if ARGS.obs == ObservationType.KIN else A2C(a2cppoCnnPolicy,
-                                                                  train_env,
-                                                                  policy_kwargs=onpolicy_kwargs,
-                                                                  tensorboard_log=filename+'/tb/',
-                                                                  verbose=1
-                                                                  )
+        if ARGS.load:
+            if os.path.isfile('C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/success_model.zip'):
+                path = 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/success_model.zip'
+            elif os.path.isfile('C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/best_model.zip'):
+                path = 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/best_model.zip'
+            else:
+                print("[ERROR]: no model under the specified path", 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52')
+            print("MODEL IS LOADING.........................................")
+            model = A2C.load(path, env=train_env)
+        else:
+            model = A2C(a2cppoMlpPolicy,
+                        train_env,
+                        policy_kwargs=onpolicy_kwargs,
+                        tensorboard_log=filename+'/tb/',
+                        verbose=1
+                        ) if ARGS.obs == ObservationType.KIN else A2C(a2cppoCnnPolicy,
+                                                                    train_env,
+                                                                    policy_kwargs=onpolicy_kwargs,
+                                                                    tensorboard_log=filename+'/tb/',
+                                                                    verbose=1
+                                                                    )
     if ARGS.algo == 'ppo':
-        model = PPO(a2cppoMlpPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename+'/tb/',
-                    verbose=1,
-                    #target_kl=0.03,
-                    #use_sde=True,
-                    #ent_coef=0.001,
+        if ARGS.load:
+            if os.path.isfile('C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/success_model.zip'):
+                path = 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/success_model.zip'
+            elif os.path.isfile('C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/best_model.zip'):
+                path = 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52'+'/best_model.zip'
+            else:
+                print("[ERROR]: no model under the specified path", 'C:/Users/Matthias/deep-rl-drones/experiments/learning/results/save-loop-ppo-kin-rpm-02.13.2023_20.12.52')
+            print("MODEL IS LOADING.........................................")
+            model = PPO.load(path, env=train_env)
+        else:
+            model = PPO(a2cppoMlpPolicy,
+                        train_env,
+                        policy_kwargs=onpolicy_kwargs,
+                        tensorboard_log=filename+'/tb/',
+                        verbose=1,
+                        #target_kl=0.03,
+                        #use_sde=True,
+                        #ent_coef=0.001,
 
-                    ) if ARGS.obs == ObservationType.KIN else PPO(a2cppoCnnPolicy,
-                                                                  train_env,
-                                                                  policy_kwargs=onpolicy_kwargs,
-                                                                  tensorboard_log=filename+'/tb/',
-                                                                  verbose=1
-                                                                  )
+                        ) if ARGS.obs == ObservationType.KIN else PPO(a2cppoCnnPolicy,
+                                                                    train_env,
+                                                                    policy_kwargs=onpolicy_kwargs,
+                                                                    tensorboard_log=filename+'/tb/',
+                                                                    verbose=1
+                                                                    )
 
     if ARGS.algo == 'ourppo':
         model = OurPPO(a2cppoMlpPolicy, train_env, tensorboard_log=filename + '/tb/', use_stable_bl_policy=True, clip=0.2, seed=0)
