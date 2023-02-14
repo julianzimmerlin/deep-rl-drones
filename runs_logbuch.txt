@@ -45,5 +45,5 @@ save-flips-ppo-kin-rpm-02.13.2023_13.23.22                  flies up and rotates
 save-loop-ppo-kin-rpm-02.10.2023_18.18.54                   First try with loss: np.maximum(0, 1 - position_loss) - 0.1 * vel_loss
 
 save-loop-ppo-kin-rpm-02.13.2023_20.12.52                   Only hovered, Used a loss similar to flips but only pos and vel loss --> remove pos loss square again and scale both rewards up; Edited normalization for pos loss since it does not have the same range as the state (multiply bounds w *2)
-
+--> USE THIS ONE FOR FLIPS WITH LOADED MODEL
 save-loop-ppo-kin-rpm-02.13.2023_22.32.52                   Drone kreiselt and falls down .. end of loop experiments
