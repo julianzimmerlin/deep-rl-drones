@@ -76,7 +76,7 @@ if __name__ == "__main__":
         INIT_XYZS = np.array([[R*np.cos((0/6)*2*np.pi+np.pi/2), R*np.sin((0/6)*2*np.pi+np.pi/2)-R, H+0*H_STEP]])
         INIT_RPY = np.array([[0, 0, 0]])
     if traj == 'loop' or traj == 'forwardloop':
-        INIT_XYZS = np.array([[0, 0, 1]])
+        INIT_XYZS = np.array([[0, 0, 0.5]])
         INIT_RPY = np.array([[0, 0, 0]])
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz/ARGS.control_freq_hz) if ARGS.aggregate else 1
 

@@ -31,19 +31,38 @@ save-flips-ppo-kin-rpm-02.12.2023_15.17.14                  Mistake corrected bu
 save-flips-ppo-kin-rpm-02.12.2023_16.12.31                  Drone just hovers and doesn´t do flips -> try to upscale angular_v_loss
 
 save-flips-ppo-kin-rpm-02.12.2023_18.30.39                  Drone drifts away by rolling again --> undo changes and reward roll angle now
+PRESENTATION
 
 save-flips-ppo-kin-rpm-02.12.2023_21.04.18                  Drone hovers, then drifts as before --> undo changes, take square of positional loss and scale down
 
 save-flips-ppo-kin-rpm-02.12.2023_23.38.04                  Drone only hovers, but hovers pretty good --> upscale angular_v_loss and roll_angle_loss, but keep other changes (so last three changes all together)
+PRESENTATION
 
 save-flips-ppo-kin-rpm-02.13.2023_01.39.39                  Drone only hovers --> Try to save previous state and reward a change of the roll angle (AND: since the reward is positive now, don´t reward moving down (it was meant as a penalty for negative reward), but slightly reward moving up)
 
 save-flips-ppo-kin-rpm-02.13.2023_11.33.30                  Drone didn´t learn to do anything, just hovers shortyl and then drifts away like usual --> try only doing positional rewards and roll_change reward
 
 save-flips-ppo-kin-rpm-02.13.2023_13.23.22                  flies up and rotates around x axis a bit, while wobbling (yaw and pitch were left out and going up was rewarded a bit too much)
+(PRESENTATION)
 
 save-loop-ppo-kin-rpm-02.10.2023_18.18.54                   First try with loss: np.maximum(0, 1 - position_loss) - 0.1 * vel_loss
+PRESENTATION    
 
 save-loop-ppo-kin-rpm-02.13.2023_20.12.52                   Only hovered, Used a loss similar to flips but only pos and vel loss --> remove pos loss square again and scale both rewards up; Edited normalization for pos loss since it does not have the same range as the state (multiply bounds w *2)
 --> USE THIS ONE FOR FLIPS WITH LOADED MODEL
+
 save-loop-ppo-kin-rpm-02.13.2023_22.32.52                   Drone kreiselt and falls down .. end of loop experiments
+(PRESENTATION)
+
+save-flips-ppo-kin-rpm-02.14.2023_16.37.53                  Training flips on model that was hovering around 0,0,1 with the simple loss
+PRESENTATION
+
+save-flips-ppo-kin-rpm-02.14.2023_18.18.02                  Upscaled roll_change a lot but still only hovering
+
+
+save-flips-ppo-kin-rpm-02.15.2023_03.16.14                  latest loss, only hovers
+PRESENTATION
+
+save-loop-ppo-kin-rpm-02.15.2023_01.29.26                   latest loss, only hovers, drifting a bit
+PRESENTATION
+

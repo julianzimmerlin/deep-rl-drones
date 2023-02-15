@@ -1,6 +1,11 @@
 # TODOs 
 TODOs.md
 
+# frame images
+files/videos/Final_Frames/**/frame*
+files/videos/Final_Frames/**/ff*
+files/videos/Final_Frames/**/save*
+
 # NumPy saves and videos
 files/logs/*.npy
 files/videos/*.mp4
