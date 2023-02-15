@@ -10,6 +10,7 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback
 from gym import spaces
 from typing import Optional
 import time
+import gym
 from stable_baselines3.common.utils import safe_mean
 
 
@@ -201,7 +202,13 @@ class OurPPO(BaseAlgorithm):
                 # roll out 1 timestep
                 batch_obs.append(obs)
                 action, log_prob = self.get_action(obs)
-                obs, rew, done, _ = self.env.step(action)
+
+                # Clip the actions to avoid out of bound error
+                clipped_action = action
+                if isinstance(self.action_space, gym.spaces.Box):
+                    clipped_action = np.clip(action, self.action_space.low, self.action_space.high)
+
+                obs, rew, done, _ = self.env.step(np.expand_dims(clipped_action, 0))
                 callback.on_step()
                 # done = truncated or terminated
 
