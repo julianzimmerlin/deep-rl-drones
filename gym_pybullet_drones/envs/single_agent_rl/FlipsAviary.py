@@ -97,26 +97,29 @@ class FlipsAviary(BaseSingleAgentAviary):
         rand = np.random.randint(0, 101)
         
         if self.use_advanced_loss:  # state[7:10] are RPY angles and state[13:16] are angular velocities
-            position_loss = np.linalg.norm(self.initial_xyzs-state[0:3])**2
-            position_z_loss = np.maximum(0, state[2]-self.initial_xyzs[0,2]) # slightly reward going up a bit
-            angle_loss = np.linalg.norm(state[8:10])
-            roll_angle_loss = state[7]
-            roll_change = state[7]-self.state_prev[7]
-            angular_v_loss = state[13] # reward roll angular vel
-            vel_loss = np.linalg.norm(state[10:13])
-
-            # Clipping to range of (0,1) after normalizing
+            
             # Normalization to (0, upper_bound) with X_changed = (X-X_min)/(X_max - X_min) * upper_bound
             # https://inomics.com/blog/standardizing-the-data-of-different-scales-which-method-to-use-1036202
             # https://stats.stackexchange.com/questions/70801/how-to-normalize-data-to-0-1-range
-            position_loss = (position_loss - (-MAX_XY))/(MAX_XY - (-MAX_XY))
-            position_z_loss = (position_z_loss - 0)/(MAX_Z - 0)
-            angle_loss = (angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
-            roll_angle_loss = (roll_angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
-            roll_change = (roll_change - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
-            angular_v_loss = (angular_v_loss - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
-            vel_loss = (vel_loss - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
+            position_state = (state[0:2] - (-MAX_XY))/(MAX_XY - (-MAX_XY))
+            position_initial = (self.initial_xyzs[0,0:2] - (-MAX_XY))/(MAX_XY - (-MAX_XY))
+            position_z_state = (state[2] - 0)/(MAX_Z - 0)
+            position_z_initial = (self.initial_xyzs[0,2] - 0)/(MAX_Z - 0)
+            angle_state = (state[8:10] - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            roll_state = (state[7] - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            roll_prev = (self.state_prev[7] - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            angular_v_state = (state[13] - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
+            vel_state = (state[10:13] - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
             
+            position_loss = np.linalg.norm(position_initial-position_state)**2
+            position_z_loss = np.maximum(0, position_z_state-position_z_initial) # slightly reward going up a bit
+            angle_loss = np.linalg.norm(angle_state)
+            roll_angle_loss = roll_state
+            roll_change = roll_state-roll_prev
+            angular_v_loss = angular_v_state # reward roll angular vel
+            vel_loss = np.linalg.norm(vel_state)
+
+            # Clipping to range of (0,1) after normalizing            
             if rand >= 99:   
                 print (f"DEBUGGING INFORMATION: after normalization \nPosition Loss: {position_loss} \nHeight Loss: {position_z_loss} \nAngle Loss: {angle_loss} \nRoll Loss: {angular_v_loss} \nRoll Angle Loss: {roll_angle_loss} \nRoll Change: {roll_change} \nVel Loss: {vel_loss} \n")
 
@@ -152,7 +155,7 @@ class FlipsAviary(BaseSingleAgentAviary):
             roll_change = state[7]-self.state_prev[7]
             # Save state as previous state
             self.state_prev = state
-            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2 + 0.1*roll_change
+            return -1 * np.linalg.norm(np.array([0, 0, 1])-state[0:3])**2 + roll_change
         # Loss clipping: clipped_loss = max(0, min(loss, upper_bound))
 
     ################################################################################

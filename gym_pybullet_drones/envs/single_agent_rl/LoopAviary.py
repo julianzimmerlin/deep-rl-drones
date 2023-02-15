@@ -108,10 +108,18 @@ class LoopAviary(BaseSingleAgentAviary):
             y = self.initial_xyzs[0, 1]
             z = self.initial_xyzs[0, 2]-(R*np.sin((self.step_counter/(self.SIM_FREQ*self.EPISODE_LEN_SEC))*(2*np.pi)+np.pi/2)-R)
             
-            position_loss = np.linalg.norm(np.array([(x, y, z)])-state[0:3])#**2
-            angle_loss = np.linalg.norm(state[7:9])
-            angular_v_loss = np.linalg.norm(state[13:16])
-            vel_loss = np.linalg.norm(state[10:13])
+            # Normalization to (0, upper_bound) with X_changed = (X-X_min)/(X_max - X_min) * upper_bound
+            # https://inomics.com/blog/standardizing-the-data-of-different-scales-which-method-to-use-1036202
+            # https://stats.stackexchange.com/questions/70801/how-to-normalize-data-to-0-1-range
+            position_state = (state[0:3] - (-MAX_XY))/(MAX_XY - (-MAX_XY))
+            angle_state = (state[7:9] - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
+            angular_v_state = (state[13:16] - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
+            vel_state = (state[10:13] - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
+            
+            position_loss = np.linalg.norm(np.array([(x, y, z)])-position_state)#**2
+            angle_loss = np.linalg.norm(angle_state)
+            angular_v_loss = np.linalg.norm(angular_v_state)
+            vel_loss = np.linalg.norm(vel_state)
 
             # DEBUGGING BLOCK:
             # self.x_circle.append(x)
@@ -138,14 +146,6 @@ class LoopAviary(BaseSingleAgentAviary):
             #     plt.show()
 
             # Clipping to range of (0,1) after normalizing
-            # Normalization to (0, upper_bound) with X_changed = (X-X_min)/(X_max - X_min) * upper_bound
-            # https://inomics.com/blog/standardizing-the-data-of-different-scales-which-method-to-use-1036202
-            # https://stats.stackexchange.com/questions/70801/how-to-normalize-data-to-0-1-range
-            position_loss = (position_loss - (-2*MAX_XY))/(2*MAX_XY - (-2*MAX_XY))
-            angle_loss = (angle_loss - (-MAX_PITCH_ROLL))/(MAX_PITCH_ROLL - (-MAX_PITCH_ROLL))
-            angular_v_loss = (angular_v_loss - (-MAX_PITCH_ROLL_VEL))/(MAX_PITCH_ROLL_VEL - (-MAX_PITCH_ROLL_VEL))
-            vel_loss = (vel_loss - (-MAX_LIN_VEL_XY))/(MAX_LIN_VEL_XY - (-MAX_LIN_VEL_XY))
-
             # 1- means we "penalize", which means we reward undesired actions less and desired ones more
             position_loss = 1-np.maximum(0, np.minimum(position_loss, 1))
             angle_loss = 1-np.maximum(0, np.minimum(angle_loss, 1))
